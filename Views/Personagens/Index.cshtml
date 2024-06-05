@@ -3,6 +3,17 @@
 <!--Inclua os TempData para Sucesso e Erro aqui, conforme exemplo na view de Autenticação-->
 @{
     ViewBag.Title = "Personagens";
+}
+@if (@TempData["Mensagem"] != null)
+{
+    <div class="alert alert-success" role="alert">
+        @TempData["Mensagem"]</div>
+}
+<!--Configuração para exibir mensagem de erro -->
+@if (@TempData["MensagemErro"] != null)
+{
+    <div class="alert alert-danger" role="alert">
+        @TempData["MensagemErro"]</div>
 }<!--Título da página para o navegador-->
 <h2>Relação de Personagens</h2><!--Título da página-->
 <p> <!--Links apontando para views na mesma pasta-->
@@ -39,3 +50,7 @@
         </tr>
     }
 </table>
+@Html.ActionLink("Clique aqui para um embate com armas!!!", "Index", "Disputas", null, new { @class = "btn btn-warning"})
+@Html.ActionLink("Clique aqui para um embate com habilidades!!!", "IndexHabilidades","Disputas", null, new { @class = "btn btn-dark"})
+@Html.ActionLink("Clique aqui para um embate em grupo!!!", "DisputaGeral", "Disputas", null, new { @class = "btn btn-danger"})
+@Html.ActionLink("Zerar ranking e restaurar pontos de vida", "ZerarRankingRestaurarVidas", "Personagens", null, new { @class = "btn btn-secondary", onclick="return confirm('Deseja realmente realizar esta ação ?');" })

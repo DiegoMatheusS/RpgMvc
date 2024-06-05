@@ -173,14 +173,14 @@ namespace RpgMvc.Controllers
         {
             try
             {
-                 HttpClient httpClient = new HttpClient();
+                HttpClient httpClient = new HttpClient();
                 string token = HttpContext.Session.GetString("SessionTokenUsuario");
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                 HttpResponseMessage response = await httpClient.DeleteAsync(uriBase + id.ToString());
                 string serialized = await response.Content.ReadAsStringAsync();
 
-                if(response.StatusCode == System.Net.HttpStatusCode.OK)
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     TempData["Mensagem"] = string.Format("Personagem Id {0} removido com sucesso!", id);
                     return RedirectToAction("Index");
@@ -193,6 +193,70 @@ namespace RpgMvc.Controllers
                 TempData["MensagemErro"] = ex.Message;
                 return RedirectToAction("Index");
             }
+        }
+        [HttpGet]
+        public async Task<ActionResult> DisputaGeralAsync()
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+
+                string token = HttpContext.Session.GetString("SessionTokenUsuario");
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                string uriBuscaPersonagens = "http://diegorpg.somee.com/Personagens/GetAll";
+                HttpResponseMessage response = await httpClient.GetAsync(uriBuscaPersonagens);
+
+                string serialized = await response.Content.ReadAsStringAsync();
+
+                List<PersonagemViewModel> listaPersonagens = await Task.Run(() =>
+                    JsonConvert.DeserializeObject<List<PersonagemViewModel>>(serialized));
+
+                string uriDisputa = "http://diegorpg.somee.com/Disputas/DisputaEmGrupo";
+                DisputaViewModel disputa = new DisputaViewModel();
+                disputa.ListarIdPersonagens = new List<int>();
+                disputa.ListarIdPersonagens.AddRange(listaPersonagens.Select(p => p.Id));
+
+                var content = new StringContent(JsonConvert.SerializeObject(disputa));
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                response = await httpClient.PostAsync(uriDisputa, content);
+
+                serialized = await response.Content.ReadAsStringAsync();
+
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    disputa = await Task.Run(() => JsonConvert.DeserializeObject<DisputaViewModel>(serialized));
+                    TempData["Mensagem"] = string.Join("<br/>", disputa.Resultados);
+                }
+                else
+                    throw new System.Exception(serialized);
+                return RedirectToAction("Index", "Personagens");
+            }
+            catch (System.Exception ex)
+            {
+                TempData["MensagemErro"] = ex.Message;
+                return RedirectToAction("Index");
+            }
+        }
+        [HttpGet]
+        public async Task<ActionResult> ZerarRankingRestaurarVidasAsync()
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                string token = HttpContext.Session.GetString("SessionTokenUsuario");
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                string uriComplementar = "ZerarRankingRestaurarVidas";
+                HttpResponseMessage response = await httpClient.PutAsync(uriBase + uriComplementar, null);
+                string serialized = await response.Content.ReadAsStringAsync();
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                    TempData["Mensagem"] = "Rankings zerados e vidas dos personagens restauradas comsucesso.";
+                else
+                    throw new System.Exception(serialized);
+            }
+            catch (System.Exception ex)
+            { TempData["MensagemErro"] = ex.Message; }
+            return RedirectToAction("Index");
         }
 
     }

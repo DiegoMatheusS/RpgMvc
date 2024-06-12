@@ -2,6 +2,17 @@
 @{
     ViewBag.Title = "Editar Personagem";
 }
+@if (@TempData["Mensagem"] != null)
+{
+    <div class="alert alert-success" role="alert">
+        @TempData["Mensagem"]</div>
+}
+<!--Configuração para exibir mensagem de erro -->
+@if (@TempData["MensagemErro"] != null)
+{
+    <div class="alert alert-danger" role="alert">
+        @TempData["MensagemErro"]</div>
+}
 <h2>Editar dados do Personagem</h2>
 @using (Html.BeginForm())
 {

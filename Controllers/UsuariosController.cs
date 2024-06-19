@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using RpgMvc.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace RpgMvc.Controllers
 {
@@ -81,7 +82,7 @@ namespace RpgMvc.Controllers
                     UsuarioViewModel uLogado = JsonConvert.DeserializeObject<UsuarioViewModel>(serialized);
                     HttpContext.Session.SetString("SessionTokenUsuario", uLogado.Token);
                     HttpContext.Session.SetString("SessionUsername", uLogado.Username);
-                    TempData["Mensagem"] = string.Format("Bem-Vindo {0}!!", uLogado.Username);
+                    TempData["Mensagem"] = string.Format("Bem-Vindo {0}", uLogado.Username);
                     return RedirectToAction("index", "Personagens");
                 }
                 else
@@ -137,7 +138,7 @@ namespace RpgMvc.Controllers
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                 string uriComplementar = "AtualizarEmail";
-                var content = new StringContent(JsonConverte.SerializeObject(u));
+                var content = new StringContent(JsonConvert.SerializeObject(u));
                 content.Headers.ContentType = new MediaTypeHeaderValue("application;json");
 
                 HttpResponseMessage response = await httpClient.PutAsync(uriBase + uriComplementar, content);
@@ -145,7 +146,7 @@ namespace RpgMvc.Controllers
 
                 if (response.StatusCode == System.Net.HttpStatusCode.OK)
                     TempData["Mensagem"] = "E-mail alterado com Sucesso";
-                else   
+                else
                     throw new System.Exception(serialized);
             }
             catch (System.Exception ex)
@@ -153,6 +154,66 @@ namespace RpgMvc.Controllers
                 TempData["MensagemErro"] = ex.Message;
             }
             return RedirectToAction("IndexInformacoes");
+        }
+
+        [HttpGet]
+        public async Task<ActionResult> ObterDadosAlteracaoSenha()
+        {
+            UsuarioViewModel viewModel = new UsuarioViewModel();
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                string login = HttpContext.Session.GetString("SessionUsername");
+                string uriComplementar = $"GetByLogin/{login}";
+                HttpResponseMessage response = await httpClient.GetAsync(uriBase +
+                uriComplementar);
+                string serialized = await response.Content.ReadAsStringAsync();
+                TempData["TituloModalExterno"] = "Alteração de Senha";
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    viewModel = await Task.Run(() =>
+                    JsonConvert.DeserializeObject<UsuarioViewModel>(serialized));
+                    return PartialView("_AlteracaoSenha", viewModel);
+                }
+                else
+                    throw new System.Exception(serialized);
+            }
+            catch (System.Exception ex)
+            {
+                TempData["MensagemErro"] = ex.Message;
+                return RedirectToAction("IndexInformacoes");
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> AlterarSenha(UsuarioViewModel u)
+        {
+            try
+            {
+                HttpClient httpClient = new HttpClient();
+                string token = HttpContext.Session.GetString("SessionTokenUsuario");
+                httpClient.DefaultRequestHeaders.Authorization = new
+                AuthenticationHeaderValue("Bearer", token);
+                string uriComplementar = "AlterarSenha";
+                u.Username = HttpContext.Session.GetString("SessionUsername");
+                var content = new StringContent(JsonConvert.SerializeObject(u));
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                HttpResponseMessage response = await httpClient.PutAsync(uriBase +
+                uriComplementar, content);
+                string serialized = await response.Content.ReadAsStringAsync();
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    string mensagem = "Senha alterada com sucesso.";
+                    TempData["Mensagem"] = mensagem; //Mensagem guardada do TempData queaparcerá na página pai do modal
+                return Json(mensagem); //Mensagem que será exibida no alert da Função quechamou este método
+                }
+                else
+                    throw new System.Exception(serialized);
+            }
+            catch (System.Exception ex)
+            {
+                return Json(ex.Message);
+            }
         }
     }
 }
